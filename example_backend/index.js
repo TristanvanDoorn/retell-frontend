@@ -7,8 +7,15 @@ const port = process.env.PORT || 8080;
 
 // Middleware to parse JSON bodies and handle CORS
 app.use(cors({
- origin: process.env.FRONTEND_URL || 'http://localhost:3000'
+   origin: [
+       'http://localhost:3000',
+       'https://henk-urqz.onrender.com'
+   ],
+   methods: ['GET', 'POST', 'OPTIONS'],
+   credentials: true,
+   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 app.post('/create-web-call', async (req, res) => {
