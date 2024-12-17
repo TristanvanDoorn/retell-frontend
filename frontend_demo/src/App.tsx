@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import { RetellWebClient } from "retell-client-js-sdk";
 
-const agentId = "ENTER_YOUR_AGENT_ID";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
+const agentId = process.env.REACT_APP_AGENT_ID;
+
+if (!agentId) {
+  throw new Error('REACT_APP_AGENT_ID is not defined in environment variables');
+}
 
 interface RegisterCallResponse {
   access_token: string;
@@ -78,17 +83,13 @@ const App = () => {
 
   async function registerCall(agentId: string): Promise<RegisterCallResponse> {
     try {
-      // Update the URL to match the new backend endpoint you created
-      const response = await fetch("http://localhost:8080/create-web-call", {
+      const response = await fetch(`${BACKEND_URL}/create-web-call`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          agent_id: agentId, // Pass the agentId as agent_id
-          // You can optionally add metadata and retell_llm_dynamic_variables here if needed
-          // metadata: { your_key: "your_value" },
-          // retell_llm_dynamic_variables: { variable_key: "variable_value" }
+          agent_id: agentId,
         }),
       });
   
