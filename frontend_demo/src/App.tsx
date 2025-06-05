@@ -260,8 +260,8 @@ const App = () => {
     <div className="app-container">
       <div className="header">
         <img 
-          src="/tmc-logo.png"
-          alt="TMC Taxameter Centrale logo"
+          src="/logo/xpots_logo.png"
+          alt="XPOTS logo"
           className="logo"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
