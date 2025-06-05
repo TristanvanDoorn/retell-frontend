@@ -260,7 +260,7 @@ const App = () => {
     <div className="app-container">
       <div className="header">
         <img 
-          src="/logo/xpots_logo.png"
+          src="/xpots_logo.png"
           alt="XPOTS logo"
           className="logo"
           onError={(e) => {

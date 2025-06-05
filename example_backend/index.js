@@ -9,7 +9,7 @@ const port = process.env.PORT || 8080;
 app.use(cors({
    origin: [
        'http://localhost:3000',
-       'https://henk-urqz.onrender.com'
+       'https://xpots.onrender.com'
    ],
    methods: ['GET', 'POST', 'OPTIONS'],
    credentials: true,
