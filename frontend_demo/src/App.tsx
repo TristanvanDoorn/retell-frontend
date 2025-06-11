@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { RetellWebClient } from "retell-client-js-sdk";
-import { supabase } from '../../lib/supabase';
+import { supabase } from './supabase';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
 const agentId = process.env.REACT_APP_AGENT_ID;
