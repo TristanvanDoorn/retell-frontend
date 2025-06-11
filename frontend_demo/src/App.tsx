@@ -99,7 +99,7 @@ const App = () => {
       .from('medewerkers_bellijst')
       .select('*')
       .order('created_at', { ascending: true })
-      .limit(3);
+      .limit(10);
     if (!error) setMedewerkers(data || []);
   }
 
@@ -301,6 +301,8 @@ const App = () => {
     return /^\+316[0-9]{8}$/.test(nr);
   }
 
+  const MAX_MEDEWERKERS = 10;
+
   async function handleAddMedewerker(e: React.FormEvent) {
     e.preventDefault();
     setMedewerkerError('');
@@ -314,8 +316,8 @@ const App = () => {
       setMedewerkerError('Ongeldig telefoonnummer. Gebruik +316XXXXXXXX.');
       return;
     }
-    if (medewerkers.length >= 3) {
-      setMedewerkerError('Maximaal 3 medewerkers toegestaan.');
+    if (medewerkers.length >= MAX_MEDEWERKERS) {
+      setMedewerkerError(`Maximaal ${MAX_MEDEWERKERS} medewerkers toegestaan.`);
       return;
     }
     const { error } = await supabase.from('medewerkers_bellijst').insert({
@@ -402,7 +404,7 @@ const App = () => {
             value={voornaam}
             onChange={e => setVoornaam(e.target.value)}
             required
-            disabled={medewerkers.length >= 3}
+            disabled={medewerkers.length >= MAX_MEDEWERKERS}
           />
           <input
             type="text"
@@ -410,7 +412,7 @@ const App = () => {
             value={achternaam}
             onChange={e => setAchternaam(e.target.value)}
             required
-            disabled={medewerkers.length >= 3}
+            disabled={medewerkers.length >= MAX_MEDEWERKERS}
           />
           <input
             type="tel"
@@ -418,10 +420,10 @@ const App = () => {
             value={medewerkerTelefoon}
             onChange={e => setMedewerkerTelefoon(formatMedewerkerTelefoon(e.target.value))}
             required
-            disabled={medewerkers.length >= 3}
+            disabled={medewerkers.length >= MAX_MEDEWERKERS}
             maxLength={12}
           />
-          <button type="submit" disabled={medewerkers.length >= 3}>Toevoegen</button>
+          <button type="submit" disabled={medewerkers.length >= MAX_MEDEWERKERS}>Toevoegen</button>
         </form>
         {medewerkerError && <div className="error-message">{medewerkerError}</div>}
         {medewerkerSuccess && <div className="success-message">{medewerkerSuccess}</div>}
