@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { RetellWebClient } from "retell-client-js-sdk";
+import { supabase } from '../../lib/supabase';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
 const agentId = process.env.REACT_APP_AGENT_ID;
@@ -35,6 +36,12 @@ const App = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [medewerkers, setMedewerkers] = useState<any[]>([]);
+  const [voornaam, setVoornaam] = useState('');
+  const [achternaam, setAchternaam] = useState('');
+  const [medewerkerTelefoon, setMedewerkerTelefoon] = useState('');
+  const [medewerkerError, setMedewerkerError] = useState('');
+  const [medewerkerSuccess, setMedewerkerSuccess] = useState('');
 
   // Initialize the SDK
   useEffect(() => {
@@ -81,6 +88,20 @@ const App = () => {
       setIsCheckingMic(false);
     });
   }, []);
+
+  // Ophalen medewerkers bij laden
+  useEffect(() => {
+    fetchMedewerkers();
+  }, []);
+
+  async function fetchMedewerkers() {
+    const { data, error } = await supabase
+      .from('medewerkers_bellijst')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(3);
+    if (!error) setMedewerkers(data || []);
+  }
 
   const checkMicrophonePermission = async (): Promise<boolean> => {
     try {
@@ -256,6 +277,49 @@ const App = () => {
     }
   };
 
+  function validateMedewerkerTelefoon(nr: string) {
+    // Alleen cijfers, 10 of 11 lang, mag met +31 of 0 beginnen
+    const clean = nr.replace(/\D/g, '');
+    return (clean.length === 10 || clean.length === 11);
+  }
+
+  async function handleAddMedewerker(e: React.FormEvent) {
+    e.preventDefault();
+    setMedewerkerError('');
+    setMedewerkerSuccess('');
+    if (!voornaam || !achternaam || !medewerkerTelefoon) {
+      setMedewerkerError('Alle velden zijn verplicht.');
+      return;
+    }
+    if (!validateMedewerkerTelefoon(medewerkerTelefoon)) {
+      setMedewerkerError('Ongeldig telefoonnummer.');
+      return;
+    }
+    if (medewerkers.length >= 3) {
+      setMedewerkerError('Maximaal 3 medewerkers toegestaan.');
+      return;
+    }
+    const { error } = await supabase.from('medewerkers_bellijst').insert({
+      voornaam,
+      achternaam,
+      telefoonnummer: medewerkerTelefoon
+    });
+    if (error) {
+      setMedewerkerError('Fout bij opslaan.');
+    } else {
+      setMedewerkerSuccess('Medewerker toegevoegd!');
+      setVoornaam('');
+      setAchternaam('');
+      setMedewerkerTelefoon('');
+      fetchMedewerkers();
+    }
+  }
+
+  async function handleDeleteMedewerker(id: number) {
+    await supabase.from('medewerkers_bellijst').delete().eq('id', id);
+    fetchMedewerkers();
+  }
+
   return (
     <div className="app-container">
       <div className="header">
@@ -346,6 +410,49 @@ const App = () => {
       {/* Success Message */}
       <div className={`success-message ${showSuccess ? 'show' : ''}`}>
         We bellen u zo terug!
+      </div>
+
+      {/* Medewerkers Panel */}
+      <div className="medewerkers-panel">
+        <h2>Medewerkers bellijst</h2>
+        <form className="medewerker-form" onSubmit={handleAddMedewerker}>
+          <input
+            type="text"
+            placeholder="Voornaam"
+            value={voornaam}
+            onChange={e => setVoornaam(e.target.value)}
+            required
+            disabled={medewerkers.length >= 3}
+          />
+          <input
+            type="text"
+            placeholder="Achternaam"
+            value={achternaam}
+            onChange={e => setAchternaam(e.target.value)}
+            required
+            disabled={medewerkers.length >= 3}
+          />
+          <input
+            type="tel"
+            placeholder="Telefoonnummer"
+            value={medewerkerTelefoon}
+            onChange={e => setMedewerkerTelefoon(e.target.value)}
+            required
+            disabled={medewerkers.length >= 3}
+          />
+          <button type="submit" disabled={medewerkers.length >= 3}>Toevoegen</button>
+        </form>
+        {medewerkerError && <div className="error-message">{medewerkerError}</div>}
+        {medewerkerSuccess && <div className="success-message">{medewerkerSuccess}</div>}
+        <ul className="medewerkers-lijst">
+          {medewerkers.map(medewerker => (
+            <li key={medewerker.id}>
+              {medewerker.voornaam} {medewerker.achternaam} - {medewerker.telefoonnummer}
+              <button onClick={() => handleDeleteMedewerker(medewerker.id)}>Verwijder</button>
+            </li>
+          ))}
+        </ul>
+        {medewerkers.length === 0 && <div>Geen medewerkers toegevoegd.</div>}
       </div>
     </div>
   );
