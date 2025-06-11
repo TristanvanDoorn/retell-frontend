@@ -277,22 +277,41 @@ const App = () => {
     }
   };
 
+  // Helper om NL mobiel nummer te formatteren naar +316XXXXXXXX
+  function formatMedewerkerTelefoon(input: string) {
+    let numbers = input.replace(/\D/g, '');
+    if (numbers.startsWith('0')) {
+      numbers = '31' + numbers.substring(1);
+    }
+    if (numbers.startsWith('31')) {
+      numbers = '+' + numbers;
+    }
+    if (!numbers.startsWith('+31')) {
+      numbers = '+31' + numbers;
+    }
+    // Alleen +316XXXXXXXX (mobiel)
+    if (numbers.startsWith('+3106')) {
+      numbers = '+316' + numbers.substring(5);
+    }
+    return numbers;
+  }
+
   function validateMedewerkerTelefoon(nr: string) {
-    // Alleen cijfers, 10 of 11 lang, mag met +31 of 0 beginnen
-    const clean = nr.replace(/\D/g, '');
-    return (clean.length === 10 || clean.length === 11);
+    // Alleen +316XXXXXXXX
+    return /^\+316[0-9]{8}$/.test(nr);
   }
 
   async function handleAddMedewerker(e: React.FormEvent) {
     e.preventDefault();
     setMedewerkerError('');
     setMedewerkerSuccess('');
+    const formatted = formatMedewerkerTelefoon(medewerkerTelefoon);
     if (!voornaam || !achternaam || !medewerkerTelefoon) {
       setMedewerkerError('Alle velden zijn verplicht.');
       return;
     }
-    if (!validateMedewerkerTelefoon(medewerkerTelefoon)) {
-      setMedewerkerError('Ongeldig telefoonnummer.');
+    if (!validateMedewerkerTelefoon(formatted)) {
+      setMedewerkerError('Ongeldig telefoonnummer. Gebruik +316XXXXXXXX.');
       return;
     }
     if (medewerkers.length >= 3) {
@@ -302,7 +321,7 @@ const App = () => {
     const { error } = await supabase.from('medewerkers_bellijst').insert({
       voornaam,
       achternaam,
-      telefoonnummer: medewerkerTelefoon
+      telefoonnummer: formatted
     });
     if (error) {
       setMedewerkerError('Fout bij opslaan.');
@@ -373,48 +392,9 @@ const App = () => {
       {/* Phone Panel */}
       <div className={`phone-panel ${isPanelOpen ? 'show' : ''}`}>
         <div className="panel-header">
-          <h2>Bel mij terug</h2>
+          <h2>Medewerkers bellijst</h2>
           <button className="close-button" onClick={() => setIsPanelOpen(false)}>&times;</button>
         </div>
-        
-        <form className="phone-form" onSubmit={handlePhoneSubmit}>
-          <input
-            type="tel"
-            className="phone-input"
-            placeholder="+31612345678"
-            value={phoneNumber}
-            onChange={handlePhoneInput}
-            required
-          />
-          {phoneError && <div className="error-message">{phoneError}</div>}
-          <button 
-            type="submit" 
-            className="submit-button"
-            disabled={!validatePhoneNumber(phoneNumber)}
-          >
-            Bel mij
-          </button>
-          
-          <div className="direct-call">
-            <p>Of bel Henk zelf</p>
-            <a href={`tel:${PHONE_NUMBER}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-              </svg>
-              {PHONE_NUMBER}
-            </a>
-          </div>
-        </form>
-      </div>
-
-      {/* Success Message */}
-      <div className={`success-message ${showSuccess ? 'show' : ''}`}>
-        We bellen u zo terug!
-      </div>
-
-      {/* Medewerkers Panel */}
-      <div className="medewerkers-panel">
-        <h2>Medewerkers bellijst</h2>
         <form className="medewerker-form" onSubmit={handleAddMedewerker}>
           <input
             type="text"
@@ -434,11 +414,12 @@ const App = () => {
           />
           <input
             type="tel"
-            placeholder="Telefoonnummer"
+            placeholder="+31612345678"
             value={medewerkerTelefoon}
-            onChange={e => setMedewerkerTelefoon(e.target.value)}
+            onChange={e => setMedewerkerTelefoon(formatMedewerkerTelefoon(e.target.value))}
             required
             disabled={medewerkers.length >= 3}
+            maxLength={12}
           />
           <button type="submit" disabled={medewerkers.length >= 3}>Toevoegen</button>
         </form>
@@ -453,6 +434,11 @@ const App = () => {
           ))}
         </ul>
         {medewerkers.length === 0 && <div>Geen medewerkers toegevoegd.</div>}
+      </div>
+
+      {/* Success Message */}
+      <div className={`success-message ${showSuccess ? 'show' : ''}`}>
+        We bellen u zo terug!
       </div>
     </div>
   );
