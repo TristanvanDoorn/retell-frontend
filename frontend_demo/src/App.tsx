@@ -42,6 +42,8 @@ const App = () => {
   const [medewerkerTelefoon, setMedewerkerTelefoon] = useState('');
   const [medewerkerError, setMedewerkerError] = useState('');
   const [medewerkerSuccess, setMedewerkerSuccess] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
   // Initialize the SDK
   useEffect(() => {
@@ -115,25 +117,28 @@ const App = () => {
   };
 
   const toggleConversation = async () => {
-    // Voorkom dubbele triggers tijdens transitie of mic check
     if (isTransitioning || isCheckingMic) return;
 
     if (isCalling) {
       setIsTransitioning(true);
       retellWebClient.stopCall();
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        setMediaStream(null);
+      }
+      setIsMuted(false);
     } else {
       try {
-        // Start met microfoon check
         setIsCheckingMic(true);
-        const hasMicPermission = await checkMicrophonePermission();
-        
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMediaStream(stream);
+        const hasMicPermission = !!stream;
+        stream.getTracks().forEach(track => track.stop());
         if (!hasMicPermission) {
           setHasError(true);
           setIsCheckingMic(false);
           return;
         }
-
-        // Als we microfoon permissie hebben, start de call
         setIsTransitioning(true);
         setHasError(false);
         const registerCallResponse = await registerCall(agentId);
@@ -142,6 +147,7 @@ const App = () => {
             accessToken: registerCallResponse.access_token,
           });
           setIsCalling(true);
+          setIsMuted(false);
         }
       } catch (error) {
         console.error("Failed to start call:", error);
@@ -341,6 +347,16 @@ const App = () => {
     fetchMedewerkers();
   }
 
+  // Mute/unmute functionaliteit
+  const handleMuteToggle = () => {
+    if (!mediaStream) return;
+    const newMuteState = !isMuted;
+    mediaStream.getAudioTracks().forEach(track => {
+      track.enabled = !newMuteState;
+    });
+    setIsMuted(newMuteState);
+  };
+
   return (
     <div className="app-container">
       <div className="header">
@@ -379,6 +395,15 @@ const App = () => {
           </svg>
         </div>
         <div className="status-text">{getStatusText()}</div>
+        {isCalling && !hasError && (
+          <button
+            className="mute-button"
+            style={{ marginTop: '2rem', padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '8px', border: 'none', background: isMuted ? '#ff4a4a' : '#ff6900', color: '#fff', cursor: 'pointer' }}
+            onClick={handleMuteToggle}
+          >
+            {isMuted ? 'Microfoon aanzetten' : 'Microfoon muten'}
+          </button>
+        )}
       </div>
 
       {/* Call Button */}
